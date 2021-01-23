@@ -1,0 +1,25 @@
+global:
+  check_interval: 5m  # Default value if not overwritten per target
+
+http:
+  - url: https://example.com
+    expected_status_code: 200
+  
+  - url: https://example.com/search
+    check_interval: 30s
+    method: POST
+    body: '{"test": "test"}'
+    verify_certificate: false
+    headers:
+      Authorization: Basic xxx
+      Content-Type: application/json
+    expected_status_code: 200
+
+ping:
+  - host: example.com
+    check_interval: 1m
+
+raw_tcp:
+  - host: ssh.example.com
+    port: 22
+    check_interval: 10m

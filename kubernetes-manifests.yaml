@@ -1,0 +1,104 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go-monitoring
+  labels:
+    app: go-monitoring
+spec:
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: go-monitoring
+  template:
+    metadata:
+      labels:
+        app: go-monitoring
+    spec:
+      securityContext:
+        sysctls:
+          - name: net.ipv4.ping_group_range
+            value: "0 2147483647"
+      containers:
+      - name: go-monitoring
+        image: ghcr.io/the-kube-way/go-monitoring:latest
+        # args:
+        #   - -debug
+        securityContext:
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+        env:
+          - name: TZ
+            value: Europe/Paris
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32M
+          limits:
+            cpu: 50m
+            memory: 32M
+        ports:
+          - containerPort: 8080
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+        volumeMounts:
+          - name: config
+            mountPath: /config
+      volumes:
+        - name: config
+          configMap:
+            name: go-monitoring-config
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: go-monitoring-config
+  labels:
+    app: go-monitoring
+data:
+  my_config.yaml: |
+    See example.yaml
+
+  my_config_bis.yaml: |
+    xxx
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: go-monitoring
+  labels:
+    app: go-monitoring
+spec:
+  ports:
+  - port: 8080
+    name: prometheus
+  selector:
+    app: go-monitoring
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: go-monitoring
+  labels:
+    app: go-monitoring
+spec:
+  endpoints:
+  - interval: 60s
+    port: prometheus
+  namespaceSelector:
+    matchNames:
+    - default
+  selector:
+    matchLabels:
+      app: go-monitoring
