@@ -9,11 +9,15 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - name: Build and push Docker image
-      uses: docker/build-push-action@v2
+
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v1
       with:
         registry: ghcr.io
         username: ${{ secrets.GHCR_USERNAME }}
         password: ${{ secrets.GHCR_TOKEN }}
-        repository: the-kube-way/go-monitoring
-        tags: latest
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v2
+      with:
+        tags: ghcr.io/the-kube-way/go-monitoring:latest
