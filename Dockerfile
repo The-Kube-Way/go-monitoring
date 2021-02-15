@@ -13,6 +13,8 @@ RUN CGO_ENABLED=0 go build -v -o go-monitoring main.go
 
 FROM scratch
 
+LABEL Maintainer "The-Kube-Way (https://github.com/The-Kube-Way/go-monitoring)"
+
 COPY --from=builder /build/go-monitoring /
 
 USER 51862
