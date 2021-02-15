@@ -23,7 +23,7 @@ spec:
             value: "0 2147483647"
       containers:
       - name: go-monitoring
-        image: ghcr.io/the-kube-way/go-monitoring/go-monitoring:latest
+        image: ghcr.io/the-kube-way/go-monitoring:latest
         # args:
         #   - -debug
         securityContext:
