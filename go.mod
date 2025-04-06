@@ -6,14 +6,32 @@ replace github.com/the-kube-way/go-monitoring/probes/ping => ./probes/ping
 
 replace github.com/the-kube-way/go-monitoring/probes/rawtcp => ./probes/rawtcp
 
-go 1.15
+go 1.24
+
+toolchain go1.24.2
 
 require (
-	github.com/go-ping/ping v0.0.0-20201115131931-3300c582a663 // indirect
-	github.com/prometheus/client_golang v1.9.0
-	github.com/sirupsen/logrus v1.7.0
-	github.com/the-kube-way/go-monitoring/probes/http v0.0.0-00010101000000-000000000000
-	github.com/the-kube-way/go-monitoring/probes/ping v0.0.0-00010101000000-000000000000
-	github.com/the-kube-way/go-monitoring/probes/rawtcp v0.0.0-00010101000000-000000000000
+	github.com/prometheus/client_golang v1.21.1
+	github.com/sirupsen/logrus v1.9.3
+	github.com/the-kube-way/go-monitoring/probes/http v0.0.0-20210215194242-da72dac029ce
+	github.com/the-kube-way/go-monitoring/probes/ping v0.0.0-20210215194242-da72dac029ce
+	github.com/the-kube-way/go-monitoring/probes/rawtcp v0.0.0-20210215194242-da72dac029ce
 	gopkg.in/yaml.v2 v2.4.0
+)
+
+require (
+	github.com/beorn7/perks v1.0.1 // indirect
+	github.com/cespare/xxhash/v2 v2.3.0 // indirect
+	github.com/go-ping/ping v1.2.0 // indirect
+	github.com/google/uuid v1.6.0 // indirect
+	github.com/klauspost/compress v1.18.0 // indirect
+	github.com/kr/text v0.2.0 // indirect
+	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
+	github.com/prometheus/client_model v0.6.1 // indirect
+	github.com/prometheus/common v0.63.0 // indirect
+	github.com/prometheus/procfs v0.16.0 // indirect
+	golang.org/x/net v0.38.0 // indirect
+	golang.org/x/sync v0.13.0 // indirect
+	golang.org/x/sys v0.32.0 // indirect
+	google.golang.org/protobuf v1.36.6 // indirect
 )

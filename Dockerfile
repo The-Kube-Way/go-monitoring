@@ -1,10 +1,12 @@
-FROM golang:alpine as builder
+FROM golang:1.24-alpine AS builder
 
 RUN apk add --no-cache git
 
 WORKDIR /build
 
-COPY . .
+COPY probes/ probes/
+COPY main.go main.go
+COPY go.* .
 
 RUN go get -d -v ./...
 
@@ -13,7 +15,7 @@ RUN CGO_ENABLED=0 go build -v -o go-monitoring main.go
 
 FROM scratch
 
-LABEL Maintainer "The-Kube-Way (https://github.com/The-Kube-Way/go-monitoring)"
+LABEL Maintainer="The-Kube-Way (https://github.com/The-Kube-Way/go-monitoring)"
 
 COPY --from=builder /build/go-monitoring /
 
