@@ -1,0 +1,16 @@
+global:
+  check_interval: 3s
+
+http:
+  - url: https://google.com
+    expected_status_code: 200
+  
+  - url: https://httpstat.us/403  # Should fail
+    expected_status_code: 200
+
+ping:
+  - host: google.com
+
+raw_tcp:
+  - host: github.com
+    port: 22
