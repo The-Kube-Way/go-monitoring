@@ -13,9 +13,9 @@ toolchain go1.24.2
 require (
 	github.com/prometheus/client_golang v1.21.1
 	github.com/sirupsen/logrus v1.9.3
-	github.com/the-kube-way/go-monitoring/probes/http v0.0.0-20210215194242-da72dac029ce
-	github.com/the-kube-way/go-monitoring/probes/ping v0.0.0-20210215194242-da72dac029ce
-	github.com/the-kube-way/go-monitoring/probes/rawtcp v0.0.0-20210215194242-da72dac029ce
+	github.com/the-kube-way/go-monitoring/probes/http v0.0.0-20250406105832-8fa995d1f7ee
+	github.com/the-kube-way/go-monitoring/probes/ping v0.0.0-20250406105832-8fa995d1f7ee
+	github.com/the-kube-way/go-monitoring/probes/rawtcp v0.0.0-20250406105832-8fa995d1f7ee
 	gopkg.in/yaml.v2 v2.4.0
 )
 
