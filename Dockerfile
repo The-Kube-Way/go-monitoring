@@ -8,7 +8,7 @@ COPY probes/ probes/
 COPY main.go main.go
 COPY go.* .
 
-RUN go get -d -v ./...
+RUN go get -v ./...
 
 RUN CGO_ENABLED=0 go build -v -o go-monitoring main.go
 
