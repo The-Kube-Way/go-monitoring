@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -53,7 +54,11 @@ func CheckHTTP(config Conf) []string {
 		req.Header.Set(key, value)
 	}
 	req.Close = true
-	req.Header.Set("User-Agent", "go-monitoring/v1")
+	userAgent := os.Getenv("HTTP_USER_AGENT")
+	if userAgent == "" {
+		userAgent = "go-monitoring/v1"
+	}
+	req.Header.Set("User-Agent", userAgent)
 
 	resp, err := client.Do(req)
 	if err != nil {
