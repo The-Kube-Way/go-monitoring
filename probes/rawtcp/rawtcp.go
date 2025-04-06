@@ -21,7 +21,7 @@ type Conf struct {
 func CheckRawTCP(config Conf) []string {
 
 	contextLogger := log.WithFields(log.Fields{
-		"probe": "ping",
+		"probe": "raw_tcp",
 		"id":    net.JoinHostPort(config.Host, config.Port)})
 
 	var errors []string
