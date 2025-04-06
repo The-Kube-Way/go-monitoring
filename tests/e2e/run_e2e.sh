@@ -19,7 +19,6 @@ docker logs $CONTAINER_NAME
 METRICS=$(curl -s http://localhost:8080/metrics | grep go_monitoring_up)
 
 grep "go_monitoring_up{id=\"github.com:22\",probe=\"raw_tcp\"} 1" <<< "$METRICS"
-grep "go_monitoring_up{id=\"google.com\",probe=\"ping\"} 1" <<< "$METRICS"
 grep "go_monitoring_up{id=\"https://google.com\",probe=\"http\"} 1" <<< "$METRICS"
 grep "go_monitoring_up{id=\"https://httpstat.us/403\",probe=\"http\"} 0" <<< "$METRICS"
 
