@@ -9,7 +9,8 @@ http:
     expected_status_code: 200
 
 ping:
-  - host: google.com
+  - host: 127.0.0.1
+  - host: 1.2.3.4
 
 raw_tcp:
   - host: github.com
