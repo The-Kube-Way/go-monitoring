@@ -1,6 +1,6 @@
 # Go Monitoring
 
-![Go](https://github.com/the-kube-way/go-monitoring/workflows/Go/badge.svg?branch=main)
+![CI](https://github.com/the-kube-way/go-monitoring/workflows/CI/badge.svg?branch=main)
 [![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 
 This tool helps to monitor network services (at the moment HTTP, Ping and raw TCP)  
@@ -15,7 +15,7 @@ docker run -p 8080:8080 -v $PWD/config.yaml:/config/config.yaml ghcr.io/the-kube
 ```
 
 Kubernetes:
-Check [kubernetes-manifests.yaml](kubernetes-manifests.yaml).
+Check [deploy/kubernetes/manifests.yaml](deploy/kubernetes/manifests.yaml).
 
 
 ## Exported Prometheus timeseries
@@ -49,6 +49,7 @@ http:
       Authorization: Basic xxx
       Content-Type: application/json
     expected_status_code: 200
+    expected_response_body: "OK"
 
 ping:
   - host: example.com
