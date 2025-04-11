@@ -19,7 +19,6 @@ type Conf struct {
 	URL                  string            `yaml:"url"`
 	Name                 string            `yaml:"name"`
 	Method               string            `yaml:"method"`
-	ContentType          string            `yaml:"content-type"`
 	Body                 string            `yaml:"body"`
 	ExpectedStatusCode   int               `yaml:"expected_status_code"`
 	StatusCodeErrorAbove int               `yaml:"status_code_error_above"`
