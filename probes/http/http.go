@@ -17,6 +17,7 @@ import (
 type Conf struct {
 	CheckInterval        time.Duration     `yaml:"check_interval"`
 	URL                  string            `yaml:"url"`
+	Name                 string            `yaml:"name"`
 	Method               string            `yaml:"method"`
 	ContentType          string            `yaml:"content-type"`
 	Body                 string            `yaml:"body"`
@@ -32,6 +33,7 @@ func CheckHTTP(config Conf) []string {
 
 	contextLogger := log.WithFields(log.Fields{
 		"probe": "http",
+		"name":  config.Name,
 		"id":    config.URL})
 
 	var errors []string
@@ -138,9 +140,9 @@ func Schedule(config Conf, interval time.Duration, up *prometheus.GaugeVec) *tim
 			case <-ticker.C:
 				errors := CheckHTTP(config)
 				if len(errors) == 0 {
-					up.WithLabelValues("http", config.URL).Set(1)
+					up.WithLabelValues("http", config.Name, config.URL).Set(1)
 				} else {
-					up.WithLabelValues("http", config.URL).Set(0)
+					up.WithLabelValues("http", config.Name, config.URL).Set(0)
 				}
 
 			}

@@ -3,6 +3,7 @@ global:
 
 http:
   - url: https://google.com
+    name: test_200
     expected_status_code: 200
   
   - url: https://httpstat.us/403  # Should fail

@@ -24,7 +24,7 @@ import (
 var (
 	up = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{Name: "go_monitoring_up"},
-		[]string{"probe", "id"})
+		[]string{"probe", "name", "id"})
 )
 
 // Conf is global config

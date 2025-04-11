@@ -1,14 +1,22 @@
 # Go Monitoring
 
 ![Go](https://github.com/the-kube-way/go-monitoring/workflows/Go/badge.svg?branch=main)
-[![Project Status: WIP  Initial development is in progress, but there has not yet been a stable, usable release suitable for the public.](https://www.repostatus.org/badges/latest/wip.svg)](https://www.repostatus.org/#wip)
+[![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 
 This tool helps to monitor network services (at the moment HTTP, Ping and raw TCP)  
-It exposes Prometheus timeseries to be used by Alertmanager for notification.
+It exposes Prometheus timeseries that can be used by Alertmanager for notification.
+This is inspired by [Blackbox Exporter](https://github.com/prometheus/blackbox_exporter).
 
 ## Usage
 
-Have a look to [kubernetes-manifests.yaml](kubernetes-manifests.yaml) and [example.yaml](example.yaml) 
+Docker:
+```bash
+docker run -p 8080:8080 -v $PWD/config.yaml:/config/config.yaml ghcr.io/the-kube-way/go-monitoring:latest
+```
+
+Kubernetes:
+Check [kubernetes-manifests.yaml](kubernetes-manifests.yaml).
+
 
 ## Exported Prometheus timeseries
 
@@ -17,3 +25,43 @@ In addition to [standard Go metrics](https://github.com/prometheus/client_golang
 - **go_monitoring_up**: 1 if target is up, else 0
   - probe: name of the probe (http, ping, raw_tcp)
   - id: id of the target (url for http probe, host for ping, host:port for raw tcp)
+  - name: name of the target (as specified in the config, "" if not specified)
+
+## Configuration
+
+The configuration is done via a YAML file:
+```yaml
+global:
+  check_interval: 5m  # Default value if not overwritten per target
+
+http:
+  - url: https://example.com
+    name: monitor_example_com
+    expected_status_code: 200
+  
+  - url: https://example.com/search
+    name: monitor_example_com_search
+    check_interval: 30s
+    method: POST
+    body: '{"test": "test"}'
+    verify_certificate: false
+    headers:
+      Authorization: Basic xxx
+      Content-Type: application/json
+    expected_status_code: 200
+
+ping:
+  - host: example.com
+    name: example_server
+    check_interval: 1m
+
+raw_tcp:
+  - host: ssh.example.com
+    port: 22
+    name: ssh_example_com
+    check_interval: 10m
+```
+
+## License
+
+[MIT](LICENSE)

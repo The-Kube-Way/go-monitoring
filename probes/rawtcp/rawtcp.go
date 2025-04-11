@@ -12,6 +12,7 @@ import (
 // Conf RawTCP probe config
 type Conf struct {
 	CheckInterval time.Duration `yaml:"check_interval"`
+	Name          string        `yaml:"name"`
 	Host          string        `yaml:"host"`
 	Port          string        `yaml:"port"`
 	Timeout       time.Duration `yaml:"timeout"`
@@ -22,6 +23,7 @@ func CheckRawTCP(config Conf) []string {
 
 	contextLogger := log.WithFields(log.Fields{
 		"probe": "raw_tcp",
+		"name":  config.Name,
 		"id":    net.JoinHostPort(config.Host, config.Port)})
 
 	var errors []string
@@ -59,9 +61,9 @@ func Schedule(config Conf, interval time.Duration, up *prometheus.GaugeVec) *tim
 			case <-ticker.C:
 				errors := CheckRawTCP(config)
 				if len(errors) == 0 {
-					up.WithLabelValues("raw_tcp", net.JoinHostPort(config.Host, config.Port)).Set(1)
+					up.WithLabelValues("raw_tcp", config.Name, net.JoinHostPort(config.Host, config.Port)).Set(1)
 				} else {
-					up.WithLabelValues("raw_tcp", net.JoinHostPort(config.Host, config.Port)).Set(0)
+					up.WithLabelValues("raw_tcp", config.Name, net.JoinHostPort(config.Host, config.Port)).Set(0)
 				}
 			}
 		}

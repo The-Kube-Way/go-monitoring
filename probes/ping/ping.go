@@ -12,6 +12,7 @@ import (
 type Conf struct {
 	CheckInterval time.Duration `yaml:"check_interval"`
 	Host          string        `yaml:"host"`
+	Name          string        `yaml:"name"`
 	Timeout       time.Duration `yaml:"timeout"`
 	RetryCount    int           `yaml:"retry_count"`
 	RetryAfter    time.Duration `yaml:"retry_after"`
@@ -22,6 +23,7 @@ func CheckPing(config Conf) []string {
 
 	contextLogger := log.WithFields(log.Fields{
 		"probe": "ping",
+		"name":  config.Name,
 		"id":    config.Host})
 
 	var errors []string
@@ -72,9 +74,9 @@ func Schedule(config Conf, interval time.Duration, up *prometheus.GaugeVec) *tim
 			case <-ticker.C:
 				errors := CheckPing(config)
 				if len(errors) == 0 {
-					up.WithLabelValues("ping", config.Host).Set(1)
+					up.WithLabelValues("ping", config.Name, config.Host).Set(1)
 				} else {
-					up.WithLabelValues("ping", config.Host).Set(0)
+					up.WithLabelValues("ping", config.Name, config.Host).Set(0)
 				}
 
 			}
