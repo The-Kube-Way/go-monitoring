@@ -23,6 +23,7 @@ grep "go_monitoring_up{id=\"127.0.0.1\",probe=\"ping\"} 1" <<< "$METRICS"
 grep "go_monitoring_up{id=\"1.2.3.4\",probe=\"ping\"} 0" <<< "$METRICS"
 grep "go_monitoring_up{id=\"https://google.com\",probe=\"http\"} 1" <<< "$METRICS"
 grep "go_monitoring_up{id=\"https://httpstat.us/403\",probe=\"http\"} 0" <<< "$METRICS"
+grep "go_monitoring_up{id=\"https://httpstat.us/404\",probe=\"http\"} 1" <<< "$METRICS"
 
 echo "Tests passed!"
 

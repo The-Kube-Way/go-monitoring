@@ -7,6 +7,10 @@ http:
   
   - url: https://httpstat.us/403  # Should fail
     expected_status_code: 200
+  
+  - url: https://httpstat.us/404
+    expected_status_code: 404
+    expected_response_body: "404 Not Found"
 
 ping:
   - host: 127.0.0.1

@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 	"time"
+	"io/ioutil"
 
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
@@ -21,6 +22,7 @@ type Conf struct {
 	Body                 string            `yaml:"body"`
 	ExpectedStatusCode   int               `yaml:"expected_status_code"`
 	StatusCodeErrorAbove int               `yaml:"status_code_error_above"`
+	ExpectedResponseBody string            `yaml:"expected_response_body"`
 	VerifyCertificate    bool              `yaml:"verify_certificate"`
 	Headers              map[string]string `yaml:"headers"`
 }
@@ -71,6 +73,7 @@ func CheckHTTP(config Conf) []string {
 	defer resp.Body.Close()
 	contextLogger.Debug(fmt.Sprintf("Status code: %d", resp.StatusCode))
 
+	// Check status code
 	StatusCodeErrorAbove := 400
 	if config.StatusCodeErrorAbove != 0 {
 		StatusCodeErrorAbove = config.StatusCodeErrorAbove
@@ -94,6 +97,28 @@ func CheckHTTP(config Conf) []string {
 					"Status code %d >= %d",
 					resp.StatusCode,
 					StatusCodeErrorAbove))
+			contextLogger.Warning(errors[len(errors)-1])
+		}
+	}
+
+	// Check response body
+	ExpectedResponseBody := ""
+	if config.ExpectedResponseBody != "" {
+		ExpectedResponseBody = config.ExpectedResponseBody
+	}
+
+	if ExpectedResponseBody != "" {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			contextLogger.Error("Fail to read response body: " + err.Error())
+			errors = append(errors, "Fail to read response body")
+			contextLogger.Warning(errors[len(errors)-1])
+			return errors
+		}
+
+		contextLogger.Debug(fmt.Sprintf("Response body: '%s'", string(body)))
+		if string(body) != ExpectedResponseBody {
+			errors = append(errors, "Response body not as expected")
 			contextLogger.Warning(errors[len(errors)-1])
 		}
 	}
