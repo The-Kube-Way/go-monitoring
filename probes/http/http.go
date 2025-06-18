@@ -24,7 +24,7 @@ type Conf struct {
 	ExpectedStatusCode   int               `yaml:"expected_status_code"`
 	StatusCodeErrorAbove int               `yaml:"status_code_error_above"`
 	ExpectedResponseBody string            `yaml:"expected_response_body"`
-	VerifyCertificate    bool              `yaml:"verify_certificate"`
+	InsecureSkipVerify   bool              `yaml:"skip_verify"`
 	Headers              map[string]string `yaml:"headers"`
 }
 
@@ -46,13 +46,15 @@ func CheckHTTP(config Conf) []string {
 	}
 
 	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: !config.VerifyCertificate},
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: config.InsecureSkipVerify},
 	}
 	client := &http.Client{Transport: tr}
 
 	req, err := http.NewRequest(method, config.URL, strings.NewReader(config.Body))
 	if err != nil {
-		contextLogger.Error("Fail create request: " + err.Error())
+		errors = append(errors, "Fail create request: " + err.Error())
+		contextLogger.Warning(errors[len(errors)-1])
+		return errors
 	}
 	for key, value := range config.Headers {
 		req.Header.Set(key, value)
@@ -66,8 +68,7 @@ func CheckHTTP(config Conf) []string {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		contextLogger.Error("Fail to do request: " + err.Error())
-		errors = append(errors, "Request failed")
+		errors = append(errors, "Request failed: " + err.Error())
 		contextLogger.Warning(errors[len(errors)-1])
 		return errors
 	}
@@ -83,14 +84,8 @@ func CheckHTTP(config Conf) []string {
 
 		contextLogger.Debug(fmt.Sprintf("TLS certificate expires on %s", cert.NotAfter.Format(time.RFC3339)))
 
-		if certExpiresIn <= 0 {
-			errors = append(
-				errors,
-				fmt.Sprintf(
-					"TLS certificate has expired on %s",
-					cert.NotAfter.Format(time.RFC3339)))
-			contextLogger.Warning(errors[len(errors)-1])
-		} else if certExpiresIn <= expirationWarningThreshold {
+		// If certificate has expired, request will fail before
+		if certExpiresIn <= expirationWarningThreshold {
 			errors = append(
 				errors,
 				fmt.Sprintf(
@@ -139,8 +134,7 @@ func CheckHTTP(config Conf) []string {
 	if ExpectedResponseBody != "" {
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			contextLogger.Error("Fail to read response body: " + err.Error())
-			errors = append(errors, "Fail to read response body")
+			errors = append(errors, "Fail to read response body: " + err.Error())
 			contextLogger.Warning(errors[len(errors)-1])
 			return errors
 		}

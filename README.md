@@ -44,7 +44,7 @@ http:
     check_interval: 30s
     method: POST
     body: '{"test": "test"}'
-    verify_certificate: false
+    skip_verify: false
     headers:
       Authorization: Basic xxx
       Content-Type: application/json

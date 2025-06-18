@@ -19,6 +19,7 @@ FROM scratch
 LABEL Maintainer="The-Kube-Way (https://github.com/The-Kube-Way/go-monitoring)"
 
 COPY --from=builder /build/go-monitoring /
+COPY --from=builder /etc/ssl/certs /etc/ssl/certs
 
 USER 51862
 
