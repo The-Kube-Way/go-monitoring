@@ -74,6 +74,30 @@ func CheckHTTP(config Conf) []string {
 	defer resp.Body.Close()
 	contextLogger.Debug(fmt.Sprintf("Status code: %d", resp.StatusCode))
 
+	// Check TLS certificate expiration if the connection was secure
+	if resp.TLS != nil && len(resp.TLS.PeerCertificates) > 0 {
+		cert := resp.TLS.PeerCertificates[0] // Get the leaf certificate
+		certExpiresIn := time.Until(cert.NotAfter)
+		expirationWarningThreshold := 10 * 24 * time.Hour // 10 days
+
+		if certExpiresIn <= 0 {
+			errors = append(
+				errors,
+				fmt.Sprintf(
+					"TLS certificate has expired on %s",
+					cert.NotAfter.Format(time.RFC3339)))
+			contextLogger.Warning(errors[len(errors)-1])
+		} else if certExpiresIn <= expirationWarningThreshold {
+			errors = append(
+				errors,
+				fmt.Sprintf(
+					"TLS certificate will expire in %s (on %s)",
+					certExpiresIn.Round(time.Hour).String(),
+					cert.NotAfter.Format(time.RFC3339)))
+			contextLogger.Warning(errors[len(errors)-1])
+		}
+	}
+
 	// Check status code
 	StatusCodeErrorAbove := 400
 	if config.StatusCodeErrorAbove != 0 {
