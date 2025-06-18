@@ -80,6 +80,8 @@ func CheckHTTP(config Conf) []string {
 		certExpiresIn := time.Until(cert.NotAfter)
 		expirationWarningThreshold := 10 * 24 * time.Hour // 10 days
 
+		contextLogger.Debug(fmt.Sprintf("TLS certificate expires on %s", cert.NotAfter.Format(time.RFC3339)))
+
 		if certExpiresIn <= 0 {
 			errors = append(
 				errors,
@@ -97,6 +99,7 @@ func CheckHTTP(config Conf) []string {
 			contextLogger.Warning(errors[len(errors)-1])
 		}
 	}
+
 
 	// Check status code
 	StatusCodeErrorAbove := 400
