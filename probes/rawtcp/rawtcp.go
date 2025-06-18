@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/the-kube-way/go-monitoring/notifications"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -64,6 +65,8 @@ func Schedule(config Conf, interval time.Duration, up *prometheus.GaugeVec) *tim
 					up.WithLabelValues("raw_tcp", config.Name, net.JoinHostPort(config.Host, config.Port)).Set(1)
 				} else {
 					up.WithLabelValues("raw_tcp", config.Name, net.JoinHostPort(config.Host, config.Port)).Set(0)
+
+					notifications.SendNotifications(config.Name, net.JoinHostPort(config.Host, config.Port), errors)
 				}
 			}
 		}
