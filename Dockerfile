@@ -5,6 +5,7 @@ RUN apk add --no-cache git
 WORKDIR /build
 
 COPY probes/ probes/
+COPY notifications/ notifications/
 COPY main.go main.go
 COPY go.* .
 
