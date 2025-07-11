@@ -24,18 +24,19 @@ import (
 var (
 	up = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{Name: "go_monitoring_up"},
-		[]string{"probe", "name", "id"})
+		[]string{"probe", "name", "id", "filename"})
 
 	latency = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "go_monitoring_latency",
 			Help: "Probe response latency in seconds (only for HTTP probes for now)",
 		},
-		[]string{"probe", "name", "id"})
+		[]string{"probe", "name", "id", "filename"})
 )
 
 // Conf is global config
 type Conf struct {
+	Filename string
 	Global struct {
 		CheckInterval time.Duration `yaml:"check_interval"`
 	}
@@ -53,6 +54,7 @@ func ReadConf(filename string) (*Conf, error) {
 	}
 
 	c := &Conf{}
+	c.Filename = filename
 	err = yaml.Unmarshal(buf, c)
 	if err != nil {
 		return nil, fmt.Errorf("in file %q: %v", filename, err)
