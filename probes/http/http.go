@@ -77,6 +77,7 @@ func CheckHTTP(config Conf, latency *prometheus.GaugeVec, filename string, oncal
 	}
 
 	// Save latency
+	contextLogger.Debug(fmt.Sprintf("Request latency: %fs", requestLatency.Seconds()))
 	latency.WithLabelValues("http", config.Name, config.URL, filename, oncallOffer).Set(requestLatency.Seconds())
 
 	defer resp.Body.Close()
