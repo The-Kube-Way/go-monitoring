@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"time"
+	"math/rand"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/the-kube-way/go-monitoring/notifications"
@@ -60,6 +61,10 @@ func Schedule(config Conf, interval time.Duration, up *prometheus.GaugeVec, file
 		for {
 			select {
 			case <-ticker.C:
+				// Wait between 0 and the interval to spread the load
+				waitTime := time.Duration(rand.Int63n(int64(interval)))
+				time.Sleep(waitTime)
+
 				errors := CheckRawTCP(config)
 				if len(errors) == 0 {
 					up.WithLabelValues("raw_tcp", config.Name, net.JoinHostPort(config.Host, config.Port), filename, oncallOffer).Set(1)

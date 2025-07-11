@@ -3,6 +3,7 @@ package http
 import (
 	"crypto/tls"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"os"
 	"strings"
@@ -166,6 +167,10 @@ func Schedule(config Conf, interval time.Duration, up *prometheus.GaugeVec, late
 		for {
 			select {
 			case <-ticker.C:
+				// Wait between 0 and the interval to spread the load
+				waitTime := time.Duration(rand.Int63n(int64(interval)))
+				time.Sleep(waitTime)
+
 				errors := CheckHTTP(config, latency, filename, oncallOffer)
 
 				if len(errors) == 0 {
