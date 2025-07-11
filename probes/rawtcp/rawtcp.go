@@ -54,7 +54,7 @@ func CheckRawTCP(config Conf) []string {
 }
 
 // Schedule a probe
-func Schedule(config Conf, interval time.Duration, up *prometheus.GaugeVec) *time.Ticker {
+func Schedule(config Conf, interval time.Duration, up *prometheus.GaugeVec, filename string, oncallOffer string) *time.Ticker {
 	ticker := time.NewTicker(interval)
 	go func() {
 		for {
@@ -62,9 +62,9 @@ func Schedule(config Conf, interval time.Duration, up *prometheus.GaugeVec) *tim
 			case <-ticker.C:
 				errors := CheckRawTCP(config)
 				if len(errors) == 0 {
-					up.WithLabelValues("raw_tcp", config.Name, net.JoinHostPort(config.Host, config.Port)).Set(1)
+					up.WithLabelValues("raw_tcp", config.Name, net.JoinHostPort(config.Host, config.Port), filename, oncallOffer).Set(1)
 				} else {
-					up.WithLabelValues("raw_tcp", config.Name, net.JoinHostPort(config.Host, config.Port)).Set(0)
+					up.WithLabelValues("raw_tcp", config.Name, net.JoinHostPort(config.Host, config.Port), filename, oncallOffer).Set(0)
 
 					notifications.SendNotifications(config.Name, net.JoinHostPort(config.Host, config.Port), errors)
 				}

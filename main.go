@@ -24,25 +24,27 @@ import (
 var (
 	up = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{Name: "go_monitoring_up"},
-		[]string{"probe", "name", "id", "filename"})
+		[]string{"probe", "name", "id", "filename", "oncall_offer"})
 
 	latency = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "go_monitoring_latency",
 			Help: "Probe response latency in seconds (only for HTTP probes for now)",
 		},
-		[]string{"probe", "name", "id", "filename"})
+		[]string{"probe", "name", "id", "filename", "oncall_offer"})
 )
 
-// Conf is global config
+type GlobalConf struct {
+	CheckInterval time.Duration `yaml:"check_interval"`
+	OnCallOffer   string        `yaml:"oncall_offer"`
+}
+
 type Conf struct {
 	Filename string
-	Global struct {
-		CheckInterval time.Duration `yaml:"check_interval"`
-	}
-	HTTP   []httpProbe.Conf   `yaml:"http"`
-	Ping   []pingProbe.Conf   `yaml:"ping"`
-	Rawtcp []rawtcpProbe.Conf `yaml:"raw_tcp"`
+	Global   GlobalConf         `yaml:"global"`
+	HTTP     []httpProbe.Conf   `yaml:"http"`
+	Ping     []pingProbe.Conf   `yaml:"ping"`
+	Rawtcp   []rawtcpProbe.Conf `yaml:"raw_tcp"`
 }
 
 // ReadConf Read config in YAML
@@ -58,6 +60,19 @@ func ReadConf(filename string) (*Conf, error) {
 	err = yaml.Unmarshal(buf, c)
 	if err != nil {
 		return nil, fmt.Errorf("in file %q: %v", filename, err)
+	}
+	
+	// Validate and set default for OnCallOffer
+	switch c.Global.OnCallOffer {
+	case "day", "we", "24_7":
+		// Valid value, keep it
+	case "*":
+		// Invalid value, exit with error
+		log.Fatal("Invalid oncall_offer value '" + c.Global.OnCallOffer + "' in " + filename)
+	default:
+		// Set default value if not defined or invalid
+		c.Global.OnCallOffer = "day"
+		log.Debug(fmt.Sprintf("Setting default oncall_offer='day' for %s", filename))
 	}
 
 	return c, nil
@@ -101,7 +116,9 @@ func loadConfig(configPath string) {
 			config,
 			CheckInterval,
 			up,
-			latency)
+			latency,
+			conf.Filename,
+			conf.Global.OnCallOffer)
 	}
 
 	for _, config := range conf.Ping {
@@ -119,7 +136,9 @@ func loadConfig(configPath string) {
 		pingProbe.Schedule(
 			config,
 			CheckInterval,
-			up)
+			up,
+			conf.Filename,
+			conf.Global.OnCallOffer)
 	}
 
 	for _, config := range conf.Rawtcp {
@@ -137,7 +156,9 @@ func loadConfig(configPath string) {
 		rawtcpProbe.Schedule(
 			config,
 			CheckInterval,
-			up)
+			up,
+			conf.Filename,
+			conf.Global.OnCallOffer)
 	}
 }
 

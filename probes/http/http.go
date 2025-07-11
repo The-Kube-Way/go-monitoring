@@ -29,7 +29,7 @@ type Conf struct {
 }
 
 // CheckHTTP HTTP probe
-func CheckHTTP(config Conf, latency *prometheus.GaugeVec) []string {
+func CheckHTTP(config Conf, latency *prometheus.GaugeVec, filename string, oncallOffer string) []string {
 
 	contextLogger := log.WithFields(log.Fields{
 		"probe": "http",
@@ -77,7 +77,7 @@ func CheckHTTP(config Conf, latency *prometheus.GaugeVec) []string {
 	}
 
 	// Save latency
-	latency.WithLabelValues("http", config.Name, config.URL).Set(requestLatency.Seconds())
+	latency.WithLabelValues("http", config.Name, config.URL, filename, oncallOffer).Set(requestLatency.Seconds())
 
 	defer resp.Body.Close()
 	contextLogger.Debug(fmt.Sprintf("Status code: %d", resp.StatusCode))
@@ -159,18 +159,18 @@ func CheckHTTP(config Conf, latency *prometheus.GaugeVec) []string {
 }
 
 // Schedule a probe
-func Schedule(config Conf, interval time.Duration, up *prometheus.GaugeVec, latency *prometheus.GaugeVec) *time.Ticker {
+func Schedule(config Conf, interval time.Duration, up *prometheus.GaugeVec, latency *prometheus.GaugeVec, filename string, oncallOffer string) *time.Ticker {
 	ticker := time.NewTicker(interval)
 	go func() {
 		for {
 			select {
 			case <-ticker.C:
-				errors := CheckHTTP(config, latency)
+				errors := CheckHTTP(config, latency, filename, oncallOffer)
 
 				if len(errors) == 0 {
-					up.WithLabelValues("http", config.Name, config.URL).Set(1)
+					up.WithLabelValues("http", config.Name, config.URL, filename, oncallOffer).Set(1)
 				} else {
-					up.WithLabelValues("http", config.Name, config.URL).Set(0)
+					up.WithLabelValues("http", config.Name, config.URL, filename, oncallOffer).Set(0)
 
 					notifications.SendNotifications(config.Name, config.URL, errors)
 				}

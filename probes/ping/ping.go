@@ -67,7 +67,7 @@ func CheckPing(config Conf) []string {
 }
 
 // Schedule a probe
-func Schedule(config Conf, interval time.Duration, up *prometheus.GaugeVec) *time.Ticker {
+func Schedule(config Conf, interval time.Duration, up *prometheus.GaugeVec, filename string, oncallOffer string) *time.Ticker {
 	ticker := time.NewTicker(interval)
 	go func() {
 		for {
@@ -75,9 +75,9 @@ func Schedule(config Conf, interval time.Duration, up *prometheus.GaugeVec) *tim
 			case <-ticker.C:
 				errors := CheckPing(config)
 				if len(errors) == 0 {
-					up.WithLabelValues("ping", config.Name, config.Host).Set(1)
+					up.WithLabelValues("ping", config.Name, config.Host, filename, oncallOffer).Set(1)
 				} else {
-					up.WithLabelValues("ping", config.Name, config.Host).Set(0)
+					up.WithLabelValues("ping", config.Name, config.Host, filename, oncallOffer).Set(0)
 
 					notifications.SendNotifications(config.Name, config.Host, errors)
 				}
