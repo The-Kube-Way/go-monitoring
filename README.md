@@ -33,6 +33,7 @@ The configuration is done via a YAML file:
 ```yaml
 global:
   check_interval: 5m  # Default value if not overwritten per target
+  oncall_offer: "day" # Possible values: day,we,24_7. Default to day if not defined.
 
 http:
   - url: https://example.com
