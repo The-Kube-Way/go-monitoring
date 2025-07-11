@@ -25,6 +25,13 @@ var (
 	up = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{Name: "go_monitoring_up"},
 		[]string{"probe", "name", "id"})
+
+	latency = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "go_monitoring_latency",
+			Help: "Probe response latency in seconds (only for HTTP probes for now)",
+		},
+		[]string{"probe", "name", "id"})
 )
 
 // Conf is global config
@@ -91,7 +98,8 @@ func loadConfig(configPath string) {
 		httpProbe.Schedule(
 			config,
 			CheckInterval,
-			up)
+			up,
+			latency)
 	}
 
 	for _, config := range conf.Ping {
@@ -163,6 +171,7 @@ func main() {
 	}
 
 	prometheus.MustRegister(up)
+	prometheus.MustRegister(latency)
 
 	http.Handle("/metrics", promhttp.Handler())
 	http.HandleFunc("/healthz", handleHealthz)

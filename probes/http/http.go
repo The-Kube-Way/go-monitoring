@@ -29,7 +29,7 @@ type Conf struct {
 }
 
 // CheckHTTP HTTP probe
-func CheckHTTP(config Conf) []string {
+func CheckHTTP(config Conf, latency *prometheus.GaugeVec) []string {
 
 	contextLogger := log.WithFields(log.Fields{
 		"probe": "http",
@@ -66,12 +66,18 @@ func CheckHTTP(config Conf) []string {
 	}
 	req.Header.Set("User-Agent", userAgent)
 
+	startTime := time.Now()
 	resp, err := client.Do(req)
-	if err != nil {
+	requestLatency := time.Since(startTime)
+
+	if err != nil {		
 		errors = append(errors, "Request failed: " + err.Error())
 		contextLogger.Warning(errors[len(errors)-1])
 		return errors
 	}
+
+	// Save latency
+	latency.WithLabelValues("http", config.Name, config.URL).Set(requestLatency.Seconds())
 
 	defer resp.Body.Close()
 	contextLogger.Debug(fmt.Sprintf("Status code: %d", resp.StatusCode))
@@ -153,13 +159,14 @@ func CheckHTTP(config Conf) []string {
 }
 
 // Schedule a probe
-func Schedule(config Conf, interval time.Duration, up *prometheus.GaugeVec) *time.Ticker {
+func Schedule(config Conf, interval time.Duration, up *prometheus.GaugeVec, latency *prometheus.GaugeVec) *time.Ticker {
 	ticker := time.NewTicker(interval)
 	go func() {
 		for {
 			select {
 			case <-ticker.C:
-				errors := CheckHTTP(config)
+				errors := CheckHTTP(config, latency)
+
 				if len(errors) == 0 {
 					up.WithLabelValues("http", config.Name, config.URL).Set(1)
 				} else {
