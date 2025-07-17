@@ -1,9 +1,11 @@
 package http
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"math/rand"
+	"net"
 	"net/http"
 	"os"
 	"strings"
@@ -27,6 +29,8 @@ type Conf struct {
 	ExpectedResponseBody string            `yaml:"expected_response_body"`
 	InsecureSkipVerify   bool              `yaml:"skip_verify"`
 	Headers              map[string]string `yaml:"headers"`
+	IPVersion            string            `yaml:"ip_version"` // "ipv4" (default) or "ipv6"
+	Timeout              time.Duration     `yaml:"timeout"`     // HTTP request timeout (default: 30s)
 }
 
 // CheckHTTP HTTP probe
@@ -50,7 +54,38 @@ func CheckHTTP(config Conf, latency *prometheus.GaugeVec, filename string, oncal
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: config.InsecureSkipVerify},
 	}
-	client := &http.Client{Transport: tr}
+	
+	// Configure timeout with default
+	timeout := config.Timeout
+	if timeout == 0 {
+		timeout = 30 * time.Second // default to 30s
+	}
+	
+	// Configure IP version based on config
+	ipVersion := strings.ToLower(config.IPVersion)
+	if ipVersion == "ipv6" {
+		tr.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
+			dialer := &net.Dialer{
+				Timeout:   timeout,
+				KeepAlive: 60 * time.Second,
+			}
+			return dialer.DialContext(ctx, "tcp6", addr)
+		}
+	} else {
+		// Default to IPv4 for empty, "ipv4", or any other value
+		tr.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
+			dialer := &net.Dialer{
+				Timeout:   timeout,
+				KeepAlive: 60 * time.Second,
+			}
+			return dialer.DialContext(ctx, "tcp4", addr)
+		}
+	}
+
+	client := &http.Client{
+		Transport: tr,
+		Timeout:   timeout,
+	}
 
 	req, err := http.NewRequest(method, config.URL, strings.NewReader(config.Body))
 	if err != nil {
