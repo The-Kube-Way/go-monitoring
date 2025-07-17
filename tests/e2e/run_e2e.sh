@@ -12,7 +12,7 @@ docker build -t $IMAGE_NAME .
 
 docker run -d --name $CONTAINER_NAME --rm -p 8080:8080 -v $(pwd)/tests/e2e/config/:/config $IMAGE_NAME -debug
 
-sleep 10
+sleep 15
 
 docker logs $CONTAINER_NAME
 
