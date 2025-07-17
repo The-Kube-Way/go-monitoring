@@ -110,6 +110,10 @@ func CheckHTTP(config Conf, latency *prometheus.GaugeVec, filename string, oncal
 	if err != nil {		
 		errors = append(errors, "Request failed: " + err.Error())
 		contextLogger.Warning(errors[len(errors)-1])
+
+		// Set latency to 0 to indicate the request has failed
+		latency.WithLabelValues("http", config.Name, config.URL, filename, oncallOffer).Set(0)
+
 		return errors
 	}
 
