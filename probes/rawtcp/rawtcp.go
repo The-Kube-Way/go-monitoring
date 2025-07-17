@@ -21,12 +21,13 @@ type Conf struct {
 }
 
 // CheckRawTCP RawTCP probe
-func CheckRawTCP(config Conf) []string {
+func CheckRawTCP(config Conf, filename string) []string {
 
 	contextLogger := log.WithFields(log.Fields{
-		"probe": "raw_tcp",
-		"name":  config.Name,
-		"id":    net.JoinHostPort(config.Host, config.Port)})
+		"probe":    "raw_tcp",
+		"name":     config.Name,
+		"id":       net.JoinHostPort(config.Host, config.Port),
+		"filename": filename})
 
 	var errors []string
 
@@ -65,7 +66,7 @@ func Schedule(config Conf, interval time.Duration, up *prometheus.GaugeVec, file
 				waitTime := time.Duration(rand.Int63n(int64(interval)))
 				time.Sleep(waitTime)
 
-				errors := CheckRawTCP(config)
+				errors := CheckRawTCP(config, filename)
 				if len(errors) == 0 {
 					up.WithLabelValues("raw_tcp", config.Name, net.JoinHostPort(config.Host, config.Port), filename, oncallOffer).Set(1)
 				} else {

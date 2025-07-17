@@ -21,12 +21,13 @@ type Conf struct {
 }
 
 // CheckPing Ping probe
-func CheckPing(config Conf) []string {
+func CheckPing(config Conf, filename string) []string {
 
 	contextLogger := log.WithFields(log.Fields{
-		"probe": "ping",
-		"name":  config.Name,
-		"id":    config.Host})
+		"probe":    "ping",
+		"name":     config.Name,
+		"id":       config.Host,
+		"filename": filename})
 
 	var errors []string
 
@@ -78,7 +79,7 @@ func Schedule(config Conf, interval time.Duration, up *prometheus.GaugeVec, file
 				waitTime := time.Duration(rand.Int63n(int64(interval)))
 				time.Sleep(waitTime)
 
-				errors := CheckPing(config)
+				errors := CheckPing(config, filename)
 				if len(errors) == 0 {
 					up.WithLabelValues("ping", config.Name, config.Host, filename, oncallOffer).Set(1)
 				} else {

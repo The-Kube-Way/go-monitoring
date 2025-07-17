@@ -172,6 +172,9 @@ func main() {
 	)
 	flag.Parse()
 
+	// Use JSON logs
+	log.SetFormatter(&log.JSONFormatter{})
+
 	log.Println("Version: 0.1-alpha")
 	if *traceLog {
 		log.SetLevel(log.TraceLevel)

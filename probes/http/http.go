@@ -33,9 +33,10 @@ type Conf struct {
 func CheckHTTP(config Conf, latency *prometheus.GaugeVec, filename string, oncallOffer string) []string {
 
 	contextLogger := log.WithFields(log.Fields{
-		"probe": "http",
-		"name":  config.Name,
-		"id":    config.URL})
+		"probe":    "http",
+		"name":     config.Name,
+		"id":       config.URL,
+		"filename": filename})
 
 	var errors []string
 
