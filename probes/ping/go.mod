@@ -6,7 +6,7 @@ toolchain go1.24.2
 
 require (
 	github.com/go-ping/ping v1.2.0
-	github.com/prometheus/client_golang v1.22.0
+	github.com/prometheus/client_golang v1.23.2
 	github.com/sirupsen/logrus v1.9.3
 )
 
