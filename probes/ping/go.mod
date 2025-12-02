@@ -2,7 +2,7 @@ module ping
 
 go 1.24
 
-toolchain go1.24.2
+toolchain go1.25.5
 
 require (
 	github.com/go-ping/ping v1.2.0
