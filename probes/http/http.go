@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
+	"golang.org/x/net/http2"
 	"os"
 	"strings"
 	"time"
@@ -60,7 +61,12 @@ func CheckHTTP(config Conf, latency *prometheus.GaugeVec, filename string, oncal
 	if timeout == 0 {
 		timeout = 30 * time.Second // default to 30s
 	}
-	
+
+	// Enable support for HTTP2
+	if err := http2.ConfigureTransport(tr); err != nil {
+		contextLogger.Warning("Failed to configure HTTP/2: " + err.Error())
+	}
+
 	// Configure IP version based on config
 	ipVersion := strings.ToLower(config.IPVersion)
 	if ipVersion == "ipv6" {
@@ -122,7 +128,7 @@ func CheckHTTP(config Conf, latency *prometheus.GaugeVec, filename string, oncal
 	latency.WithLabelValues("http", config.Name, config.URL, filename, oncallOffer).Set(requestLatency.Seconds())
 
 	defer resp.Body.Close()
-	contextLogger.Debug(fmt.Sprintf("Status code: %d", resp.StatusCode))
+	contextLogger.Debug(fmt.Sprintf("Got HTTP %d (%s)", resp.StatusCode, resp.Proto))
 
 	// Check TLS certificate expiration if the connection was secure
 	if resp.TLS != nil && len(resp.TLS.PeerCertificates) > 0 {
