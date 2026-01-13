@@ -17,6 +17,7 @@ require (
 	github.com/the-kube-way/go-monitoring/probes/ping v0.0.0-20250406112039-67c78299763a
 	github.com/the-kube-way/go-monitoring/probes/rawtcp v0.0.0-20250406112039-67c78299763a
 	gopkg.in/yaml.v2 v2.4.0
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
