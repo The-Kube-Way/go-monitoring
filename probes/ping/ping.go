@@ -6,7 +6,6 @@ import (
 
 	"github.com/go-ping/ping"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/the-kube-way/go-monitoring/notifications"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -84,8 +83,6 @@ func Schedule(config Conf, interval time.Duration, up *prometheus.GaugeVec, file
 					up.WithLabelValues("ping", config.Name, config.Host, filename, oncallOffer).Set(1)
 				} else {
 					up.WithLabelValues("ping", config.Name, config.Host, filename, oncallOffer).Set(0)
-
-					notifications.SendNotifications(config.Name, config.Host, errors)
 				}
 			}
 		}

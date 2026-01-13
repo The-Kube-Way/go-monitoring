@@ -14,7 +14,6 @@ import (
 	"io/ioutil"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/the-kube-way/go-monitoring/notifications"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -223,8 +222,6 @@ func Schedule(config Conf, interval time.Duration, up *prometheus.GaugeVec, late
 					up.WithLabelValues("http", config.Name, config.URL, filename, oncallOffer).Set(1)
 				} else {
 					up.WithLabelValues("http", config.Name, config.URL, filename, oncallOffer).Set(0)
-
-					notifications.SendNotifications(config.Name, config.URL, errors)
 				}
 			}
 		}
