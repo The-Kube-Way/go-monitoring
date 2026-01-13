@@ -24,18 +24,20 @@ import (
 var (
 	up = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{Name: "go_monitoring_up"},
-		[]string{"probe", "name", "id", "filename", "oncall_offer"})
+		[]string{"probe", "name", "id", "filename", "customer", "environment", "oncall_offer"})
 
 	latency = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "go_monitoring_latency",
 			Help: "Probe response latency in seconds (only for HTTP probes for now)",
 		},
-		[]string{"probe", "name", "id", "filename", "oncall_offer"})
+		[]string{"probe", "name", "id", "filename", "customer", "environment", "oncall_offer"})
 )
 
 type GlobalConf struct {
 	CheckInterval time.Duration `yaml:"check_interval"`
+	Customer      string        `yaml:"customer"`
+	Environment   string        `yaml:"environment"`
 	OnCallOffer   string        `yaml:"oncall_offer"`
 }
 
@@ -61,7 +63,12 @@ func ReadConf(filename string) (*Conf, error) {
 	if err != nil {
 		return nil, fmt.Errorf("in file %q: %v", filename, err)
 	}
-	
+
+	// Log a warning message if customer or environment is not defined explicitly
+	if c.Global.Customer == "" || c.Global.Environment == "" {
+		log.Warning(fmt.Sprintf("Customer or environment not defined explicitly for %s: customer=%s, environment=%s", filename, c.Global.Customer, c.Global.Environment))
+	}
+
 	// Validate and set default for OnCallOffer
 	switch c.Global.OnCallOffer {
 	case "day", "we", "24_7":
@@ -118,6 +125,8 @@ func loadConfig(configPath string) {
 			up,
 			latency,
 			conf.Filename,
+			conf.Global.Customer,
+			conf.Global.Environment,
 			conf.Global.OnCallOffer)
 	}
 
@@ -138,6 +147,8 @@ func loadConfig(configPath string) {
 			CheckInterval,
 			up,
 			conf.Filename,
+			conf.Global.Customer,
+			conf.Global.Environment,
 			conf.Global.OnCallOffer)
 	}
 
@@ -158,6 +169,8 @@ func loadConfig(configPath string) {
 			CheckInterval,
 			up,
 			conf.Filename,
+			conf.Global.Customer,
+			conf.Global.Environment,
 			conf.Global.OnCallOffer)
 	}
 }

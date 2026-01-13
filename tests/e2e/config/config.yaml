@@ -1,5 +1,7 @@
 global:
   check_interval: 3s
+  customer: test
+  environment: ci
 
 http:
   - url: https://google.com

@@ -20,13 +20,15 @@ type Conf struct {
 }
 
 // CheckRawTCP RawTCP probe
-func CheckRawTCP(config Conf, filename string) []string {
+func CheckRawTCP(config Conf, filename string, customer string, environment string) []string {
 
 	contextLogger := log.WithFields(log.Fields{
-		"probe":    "raw_tcp",
-		"name":     config.Name,
-		"id":       net.JoinHostPort(config.Host, config.Port),
-		"filename": filename})
+		"probe":        "raw_tcp",
+		"name":         config.Name,
+		"id":           net.JoinHostPort(config.Host, config.Port),
+		"filename":     filename,
+		"customer":     customer,
+		"environment":  environment})
 
 	var errors []string
 
@@ -55,7 +57,7 @@ func CheckRawTCP(config Conf, filename string) []string {
 }
 
 // Schedule a probe
-func Schedule(config Conf, interval time.Duration, up *prometheus.GaugeVec, filename string, oncallOffer string) *time.Ticker {
+func Schedule(config Conf, interval time.Duration, up *prometheus.GaugeVec, filename string, customer string, environment string, oncallOffer string) *time.Ticker {
 	ticker := time.NewTicker(interval)
 	go func() {
 		for {
@@ -65,11 +67,11 @@ func Schedule(config Conf, interval time.Duration, up *prometheus.GaugeVec, file
 				waitTime := time.Duration(rand.Int63n(int64(interval)))
 				time.Sleep(waitTime)
 
-				errors := CheckRawTCP(config, filename)
+				errors := CheckRawTCP(config, filename, customer, environment)
 				if len(errors) == 0 {
-					up.WithLabelValues("raw_tcp", config.Name, net.JoinHostPort(config.Host, config.Port), filename, oncallOffer).Set(1)
+					up.WithLabelValues("raw_tcp", config.Name, net.JoinHostPort(config.Host, config.Port), filename, customer, environment, oncallOffer).Set(1)
 				} else {
-					up.WithLabelValues("raw_tcp", config.Name, net.JoinHostPort(config.Host, config.Port), filename, oncallOffer).Set(0)
+					up.WithLabelValues("raw_tcp", config.Name, net.JoinHostPort(config.Host, config.Port), filename, customer, environment, oncallOffer).Set(0)
 				}
 			}
 		}

@@ -20,13 +20,15 @@ type Conf struct {
 }
 
 // CheckPing Ping probe
-func CheckPing(config Conf, filename string) []string {
+func CheckPing(config Conf, filename string, customer string, environment string) []string {
 
 	contextLogger := log.WithFields(log.Fields{
-		"probe":    "ping",
-		"name":     config.Name,
-		"id":       config.Host,
-		"filename": filename})
+		"probe":        "ping",
+		"name":         config.Name,
+		"id":           config.Host,
+		"filename":     filename,
+		"customer":     customer,
+		"environment": environment})
 
 	var errors []string
 
@@ -68,7 +70,7 @@ func CheckPing(config Conf, filename string) []string {
 }
 
 // Schedule a probe
-func Schedule(config Conf, interval time.Duration, up *prometheus.GaugeVec, filename string, oncallOffer string) *time.Ticker {
+func Schedule(config Conf, interval time.Duration, up *prometheus.GaugeVec, filename string, customer string, environment string, oncallOffer string) *time.Ticker {
 	ticker := time.NewTicker(interval)
 	go func() {
 		for {
@@ -78,11 +80,11 @@ func Schedule(config Conf, interval time.Duration, up *prometheus.GaugeVec, file
 				waitTime := time.Duration(rand.Int63n(int64(interval)))
 				time.Sleep(waitTime)
 
-				errors := CheckPing(config, filename)
+				errors := CheckPing(config, filename, customer, environment)
 				if len(errors) == 0 {
-					up.WithLabelValues("ping", config.Name, config.Host, filename, oncallOffer).Set(1)
+					up.WithLabelValues("ping", config.Name, config.Host, filename, customer, environment, oncallOffer).Set(1)
 				} else {
-					up.WithLabelValues("ping", config.Name, config.Host, filename, oncallOffer).Set(0)
+					up.WithLabelValues("ping", config.Name, config.Host, filename, customer, environment, oncallOffer).Set(0)
 				}
 			}
 		}

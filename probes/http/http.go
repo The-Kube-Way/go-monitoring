@@ -34,13 +34,16 @@ type Conf struct {
 }
 
 // CheckHTTP HTTP probe
-func CheckHTTP(config Conf, latency *prometheus.GaugeVec, filename string, oncallOffer string) []string {
+func CheckHTTP(config Conf, latency *prometheus.GaugeVec, filename string, customer string, environment string, oncallOffer string) []string {
 
 	contextLogger := log.WithFields(log.Fields{
-		"probe":    "http",
-		"name":     config.Name,
-		"id":       config.URL,
-		"filename": filename})
+		"probe":        "http",
+		"name":         config.Name,
+		"id":           config.URL,
+		"filename":     filename,
+		"customer":     customer,
+		"environment":  environment,
+	})
 
 	var errors []string
 
@@ -117,14 +120,14 @@ func CheckHTTP(config Conf, latency *prometheus.GaugeVec, filename string, oncal
 		contextLogger.Warning(errors[len(errors)-1])
 
 		// Set latency to 0 to indicate the request has failed
-		latency.WithLabelValues("http", config.Name, config.URL, filename, oncallOffer).Set(0)
+		latency.WithLabelValues("http", config.Name, config.URL, filename, customer, environment, oncallOffer).Set(0)
 
 		return errors
 	}
 
 	// Save latency
 	contextLogger.Debug(fmt.Sprintf("Request latency: %fs", requestLatency.Seconds()))
-	latency.WithLabelValues("http", config.Name, config.URL, filename, oncallOffer).Set(requestLatency.Seconds())
+	latency.WithLabelValues("http", config.Name, config.URL, filename, customer, environment, oncallOffer).Set(requestLatency.Seconds())
 
 	defer resp.Body.Close()
 	contextLogger.Debug(fmt.Sprintf("Got HTTP %d (%s)", resp.StatusCode, resp.Proto))
@@ -206,7 +209,7 @@ func CheckHTTP(config Conf, latency *prometheus.GaugeVec, filename string, oncal
 }
 
 // Schedule a probe
-func Schedule(config Conf, interval time.Duration, up *prometheus.GaugeVec, latency *prometheus.GaugeVec, filename string, oncallOffer string) *time.Ticker {
+func Schedule(config Conf, interval time.Duration, up *prometheus.GaugeVec, latency *prometheus.GaugeVec, filename string, customer string, environment string, oncallOffer string) *time.Ticker {
 	ticker := time.NewTicker(interval)
 	go func() {
 		for {
@@ -216,12 +219,12 @@ func Schedule(config Conf, interval time.Duration, up *prometheus.GaugeVec, late
 				waitTime := time.Duration(rand.Int63n(int64(interval)))
 				time.Sleep(waitTime)
 
-				errors := CheckHTTP(config, latency, filename, oncallOffer)
+				errors := CheckHTTP(config, latency, filename, customer, environment, oncallOffer)
 
 				if len(errors) == 0 {
-					up.WithLabelValues("http", config.Name, config.URL, filename, oncallOffer).Set(1)
+					up.WithLabelValues("http", config.Name, config.URL, filename, customer, environment, oncallOffer).Set(1)
 				} else {
-					up.WithLabelValues("http", config.Name, config.URL, filename, oncallOffer).Set(0)
+					up.WithLabelValues("http", config.Name, config.URL, filename, customer, environment, oncallOffer).Set(0)
 				}
 			}
 		}
