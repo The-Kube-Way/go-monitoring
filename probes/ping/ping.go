@@ -1,8 +1,9 @@
 package ping
 
 import (
-	"time"
 	"math/rand"
+	"strings"
+	"time"
 
 	"github.com/go-ping/ping"
 	"github.com/prometheus/client_golang/prometheus"
@@ -19,12 +20,22 @@ type Conf struct {
 	RetryAfter    time.Duration `yaml:"retry_after"`
 }
 
+func getProbeName(config Conf) string {
+	id := config.Host
+	name := strings.TrimSpace(config.Name)
+	if name == "" {
+		return id
+	}
+	return name
+}
+
 // CheckPing Ping probe
 func CheckPing(config Conf, filename string, customer string, environment string) []string {
+	probeName := getProbeName(config)
 
 	contextLogger := log.WithFields(log.Fields{
 		"probe":        "ping",
-		"name":         config.Name,
+		"name":         probeName,
 		"id":           config.Host,
 		"filename":     filename,
 		"customer":     customer,
@@ -71,6 +82,7 @@ func CheckPing(config Conf, filename string, customer string, environment string
 
 // Schedule a probe
 func Schedule(config Conf, interval time.Duration, up *prometheus.GaugeVec, filename string, customer string, environment string, oncallOffer string) *time.Ticker {
+	probeName := getProbeName(config)
 	ticker := time.NewTicker(interval)
 	go func() {
 		for {
@@ -82,9 +94,9 @@ func Schedule(config Conf, interval time.Duration, up *prometheus.GaugeVec, file
 
 				errors := CheckPing(config, filename, customer, environment)
 				if len(errors) == 0 {
-					up.WithLabelValues("ping", config.Name, config.Host, filename, customer, environment, oncallOffer).Set(1)
+					up.WithLabelValues("ping", probeName, config.Host, filename, customer, environment, oncallOffer).Set(1)
 				} else {
-					up.WithLabelValues("ping", config.Name, config.Host, filename, customer, environment, oncallOffer).Set(0)
+					up.WithLabelValues("ping", probeName, config.Host, filename, customer, environment, oncallOffer).Set(0)
 				}
 			}
 		}

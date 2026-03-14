@@ -2,9 +2,10 @@ package rawtcp
 
 import (
 	"fmt"
-	"net"
-	"time"
 	"math/rand"
+	"net"
+	"strings"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
@@ -19,12 +20,23 @@ type Conf struct {
 	Timeout       time.Duration `yaml:"timeout"`
 }
 
+func getProbeName(config Conf) string {
+	id := net.JoinHostPort(config.Host, config.Port)
+	name := strings.TrimSpace(config.Name)
+	if name == "" {
+		return id
+	}
+
+	return name
+}
+
 // CheckRawTCP RawTCP probe
 func CheckRawTCP(config Conf, filename string, customer string, environment string) []string {
+	probeName := getProbeName(config)
 
 	contextLogger := log.WithFields(log.Fields{
 		"probe":        "raw_tcp",
-		"name":         config.Name,
+		"name":         probeName,
 		"id":           net.JoinHostPort(config.Host, config.Port),
 		"filename":     filename,
 		"customer":     customer,
@@ -58,6 +70,7 @@ func CheckRawTCP(config Conf, filename string, customer string, environment stri
 
 // Schedule a probe
 func Schedule(config Conf, interval time.Duration, up *prometheus.GaugeVec, filename string, customer string, environment string, oncallOffer string) *time.Ticker {
+	probeName := getProbeName(config)
 	ticker := time.NewTicker(interval)
 	go func() {
 		for {
@@ -69,9 +82,9 @@ func Schedule(config Conf, interval time.Duration, up *prometheus.GaugeVec, file
 
 				errors := CheckRawTCP(config, filename, customer, environment)
 				if len(errors) == 0 {
-					up.WithLabelValues("raw_tcp", config.Name, net.JoinHostPort(config.Host, config.Port), filename, customer, environment, oncallOffer).Set(1)
+					up.WithLabelValues("raw_tcp", probeName, net.JoinHostPort(config.Host, config.Port), filename, customer, environment, oncallOffer).Set(1)
 				} else {
-					up.WithLabelValues("raw_tcp", config.Name, net.JoinHostPort(config.Host, config.Port), filename, customer, environment, oncallOffer).Set(0)
+					up.WithLabelValues("raw_tcp", probeName, net.JoinHostPort(config.Host, config.Port), filename, customer, environment, oncallOffer).Set(0)
 				}
 			}
 		}
