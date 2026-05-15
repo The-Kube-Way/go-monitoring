@@ -15,6 +15,7 @@ type Conf struct {
 	CheckInterval time.Duration `yaml:"check_interval"`
 	Host          string        `yaml:"host"`
 	Name          string        `yaml:"name"`
+	Count         int           `yaml:"count"`
 	Timeout       time.Duration `yaml:"timeout"`
 	RetryCount    int           `yaml:"retry_count"`
 	RetryAfter    time.Duration `yaml:"retry_after"`
@@ -34,17 +35,21 @@ func CheckPing(config Conf, filename string, customer string, environment string
 	probeName := getProbeName(config)
 
 	contextLogger := log.WithFields(log.Fields{
-		"probe":        "ping",
-		"name":         probeName,
-		"id":           config.Host,
-		"filename":     filename,
-		"customer":     customer,
+		"probe":       "ping",
+		"name":        probeName,
+		"id":          config.Host,
+		"filename":    filename,
+		"customer":    customer,
 		"environment": environment})
 
 	var errors []string
 
 	contextLogger.Trace("Entering in checkPing")
 
+	count := 3
+	if config.Count > 0 {
+		count = config.Count
+	}
 	timeout := 5 * time.Second
 	if config.Timeout != 0 {
 		timeout = config.Timeout
@@ -55,7 +60,8 @@ func CheckPing(config Conf, filename string, customer string, environment string
 		if err != nil {
 			contextLogger.Fatal("Fail to setup pinger: " + err.Error())
 		}
-		pinger.Count = 3
+
+		pinger.Count = count
 		pinger.Timeout = timeout
 		err = pinger.Run()
 		if err != nil {
