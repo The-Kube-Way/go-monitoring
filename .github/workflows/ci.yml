@@ -62,7 +62,6 @@ jobs:
           ghcr.io/the-kube-way/go-monitoring
         tags: |
           type=raw,value=latest
-          type=sha,prefix=,suffix=,format=short
 
     - name: Build and Push Docker Image
       uses: docker/build-push-action@v6
