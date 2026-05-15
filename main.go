@@ -29,7 +29,7 @@ var (
 	latency = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "go_monitoring_latency",
-			Help: "Probe response latency in seconds (only for HTTP probes for now)",
+			Help: "Probe response latency in seconds",
 		},
 		[]string{"probe", "name", "id", "filename", "customer", "environment", "oncall_offer"})
 )
@@ -146,6 +146,7 @@ func loadConfig(configPath string) {
 			config,
 			CheckInterval,
 			up,
+			latency,
 			conf.Filename,
 			conf.Global.Customer,
 			conf.Global.Environment,

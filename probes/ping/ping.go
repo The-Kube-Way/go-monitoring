@@ -1,6 +1,7 @@
 package ping
 
 import (
+	"fmt"
 	"math/rand"
 	"strings"
 	"time"
@@ -31,7 +32,7 @@ func getProbeName(config Conf) string {
 }
 
 // CheckPing Ping probe
-func CheckPing(config Conf, filename string, customer string, environment string) []string {
+func CheckPing(config Conf, latency *prometheus.GaugeVec, filename string, customer string, environment string, oncallOffer string) []string {
 	probeName := getProbeName(config)
 
 	contextLogger := log.WithFields(log.Fields{
@@ -60,7 +61,6 @@ func CheckPing(config Conf, filename string, customer string, environment string
 		if err != nil {
 			contextLogger.Fatal("Fail to setup pinger: " + err.Error())
 		}
-
 		pinger.Count = count
 		pinger.Timeout = timeout
 		err = pinger.Run()
@@ -71,6 +71,8 @@ func CheckPing(config Conf, filename string, customer string, environment string
 		stats := pinger.Statistics()
 
 		if stats.PacketLoss < 100 { // At least one packet received
+			contextLogger.Debug(fmt.Sprintf("Ping avg RTT: %fs", stats.AvgRtt.Seconds()))
+			latency.WithLabelValues("ping", probeName, config.Host, filename, customer, environment, oncallOffer).Set(stats.AvgRtt.Seconds())
 			return errors
 		}
 
@@ -81,13 +83,16 @@ func CheckPing(config Conf, filename string, customer string, environment string
 
 	}
 
+	// Set latency to 0 to indicate the ping has failed
+	latency.WithLabelValues("ping", probeName, config.Host, filename, customer, environment, oncallOffer).Set(0)
+
 	contextLogger.Debug("errors: ", errors)
 
 	return errors
 }
 
 // Schedule a probe
-func Schedule(config Conf, interval time.Duration, up *prometheus.GaugeVec, filename string, customer string, environment string, oncallOffer string) *time.Ticker {
+func Schedule(config Conf, interval time.Duration, up *prometheus.GaugeVec, latency *prometheus.GaugeVec, filename string, customer string, environment string, oncallOffer string) *time.Ticker {
 	probeName := getProbeName(config)
 	ticker := time.NewTicker(interval)
 	go func() {
@@ -98,7 +103,7 @@ func Schedule(config Conf, interval time.Duration, up *prometheus.GaugeVec, file
 				waitTime := time.Duration(rand.Int63n(int64(interval)))
 				time.Sleep(waitTime)
 
-				errors := CheckPing(config, filename, customer, environment)
+				errors := CheckPing(config, latency, filename, customer, environment, oncallOffer)
 				if len(errors) == 0 {
 					up.WithLabelValues("ping", probeName, config.Host, filename, customer, environment, oncallOffer).Set(1)
 				} else {
