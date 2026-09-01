@@ -10,7 +10,7 @@ go 1.24.4
 
 require (
 	github.com/prometheus/client_golang v1.23.2
-	github.com/sirupsen/logrus v1.9.3
+	github.com/sirupsen/logrus v1.10.2
 	github.com/the-kube-way/go-monitoring/probes/http v0.0.0-20250406112039-67c78299763a
 	github.com/the-kube-way/go-monitoring/probes/ping v0.0.0-20250406112039-67c78299763a
 	github.com/the-kube-way/go-monitoring/probes/rawtcp v0.0.0-20250406112039-67c78299763a
