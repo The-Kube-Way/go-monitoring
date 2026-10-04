@@ -46,7 +46,7 @@ func getProbeName(config Conf) string {
 // CheckHTTP HTTP probe
 // Returns the errors (target considered down) and the warnings (target still up,
 // but something needs attention, e.g. a TLS certificate close to expiration)
-func CheckHTTP(config Conf, latency *prometheus.GaugeVec, filename string, customer string, environment string, oncallOffer string) ([]string, []string) {
+func CheckHTTP(config Conf, latency *prometheus.GaugeVec, tlsExpiresIn *prometheus.GaugeVec, filename string, customer string, environment string, oncallOffer string) ([]string, []string) {
 	probeName := getProbeName(config)
 
 	contextLogger := log.WithFields(log.Fields{
@@ -136,6 +136,9 @@ func CheckHTTP(config Conf, latency *prometheus.GaugeVec, filename string, custo
 		// Set latency to 0 to indicate the request has failed
 		latency.WithLabelValues("http", probeName, config.URL, filename, customer, environment, oncallOffer).Set(0)
 
+		// Certificate state is unknown: drop the series rather than exposing a stale value
+		tlsExpiresIn.DeleteLabelValues("http", probeName, config.URL, filename, customer, environment, oncallOffer)
+
 		return errors, warnings
 	}
 
@@ -153,6 +156,7 @@ func CheckHTTP(config Conf, latency *prometheus.GaugeVec, filename string, custo
 		expirationWarningThreshold := 10 * 24 * time.Hour // 10 days
 
 		contextLogger.Debug(fmt.Sprintf("TLS certificate expires on %s", cert.NotAfter.Format(time.RFC3339)))
+		tlsExpiresIn.WithLabelValues("http", probeName, config.URL, filename, customer, environment, oncallOffer).Set(certExpiresIn.Seconds())
 
 		// If certificate has expired, request will fail before
 		// so this is only a warning: the target is still up
@@ -224,7 +228,7 @@ func CheckHTTP(config Conf, latency *prometheus.GaugeVec, filename string, custo
 }
 
 // Schedule a probe
-func Schedule(config Conf, interval time.Duration, up *prometheus.GaugeVec, warn *prometheus.GaugeVec, latency *prometheus.GaugeVec, filename string, customer string, environment string, oncallOffer string) *time.Ticker {
+func Schedule(config Conf, interval time.Duration, up *prometheus.GaugeVec, warn *prometheus.GaugeVec, latency *prometheus.GaugeVec, tlsExpiresIn *prometheus.GaugeVec, filename string, customer string, environment string, oncallOffer string) *time.Ticker {
 	probeName := getProbeName(config)
 	ticker := time.NewTicker(interval)
 	go func() {
@@ -235,7 +239,7 @@ func Schedule(config Conf, interval time.Duration, up *prometheus.GaugeVec, warn
 				waitTime := time.Duration(rand.Int63n(int64(interval)))
 				time.Sleep(waitTime)
 
-				errors, warnings := CheckHTTP(config, latency, filename, customer, environment, oncallOffer)
+				errors, warnings := CheckHTTP(config, latency, tlsExpiresIn, filename, customer, environment, oncallOffer)
 
 				if len(errors) == 0 {
 					up.WithLabelValues("http", probeName, config.URL, filename, customer, environment, oncallOffer).Set(1)

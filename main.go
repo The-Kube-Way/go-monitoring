@@ -42,6 +42,13 @@ var (
 			Help: "Probe response latency in seconds",
 		},
 		[]string{"probe", "name", "id", "filename", "customer", "environment", "oncall_offer"})
+
+	tlsExpiresIn = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "go_monitoring_tls_expires_in_seconds",
+			Help: "Time in seconds before the TLS certificate of the target expires",
+		},
+		[]string{"probe", "name", "id", "filename", "customer", "environment", "oncall_offer"})
 )
 
 type GlobalConf struct {
@@ -135,6 +142,7 @@ func loadConfig(configPath string) {
 			up,
 			warn,
 			latency,
+			tlsExpiresIn,
 			conf.Filename,
 			conf.Global.Customer,
 			conf.Global.Environment,
@@ -225,6 +233,7 @@ func main() {
 	prometheus.MustRegister(up)
 	prometheus.MustRegister(warn)
 	prometheus.MustRegister(latency)
+	prometheus.MustRegister(tlsExpiresIn)
 
 	http.Handle("/metrics", promhttp.Handler())
 	http.HandleFunc("/healthz", handleHealthz)

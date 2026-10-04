@@ -35,6 +35,11 @@ In addition to [standard Go metrics](https://github.com/prometheus/client_golang
     or when the ping only succeeded after a retry.
   - Same labels as `go_monitoring_up`
 
+- **go_monitoring_tls_expires_in_seconds**: time in seconds before the TLS certificate
+  (leaf) of the target expires (https targets of the http probe only)
+  - The series is removed when the request fails, as the certificate state is then unknown.
+  - Same labels as `go_monitoring_up`
+
 ## Configuration
 
 The configuration is done via a YAML file:
