@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-ping/ping"
+	probing "github.com/prometheus-community/pro-bing"
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 )
@@ -60,7 +60,7 @@ func CheckPing(config Conf, latency *prometheus.GaugeVec, filename string, custo
 	}
 
 	for i := 0; i < config.RetryCount+1; i++ {
-		pinger, err := ping.NewPinger(config.Host)
+		pinger, err := probing.NewPinger(config.Host)
 		if err != nil {
 			contextLogger.Fatal("Fail to setup pinger: " + err.Error())
 		}
