@@ -32,7 +32,9 @@ func getProbeName(config Conf) string {
 }
 
 // CheckPing Ping probe
-func CheckPing(config Conf, latency *prometheus.GaugeVec, filename string, customer string, environment string, oncallOffer string) []string {
+// Returns the errors (target considered down) and the warnings (target still up,
+// but something needs attention, e.g. partial packet loss)
+func CheckPing(config Conf, latency *prometheus.GaugeVec, filename string, customer string, environment string, oncallOffer string) ([]string, []string) {
 	probeName := getProbeName(config)
 
 	contextLogger := log.WithFields(log.Fields{
@@ -44,6 +46,7 @@ func CheckPing(config Conf, latency *prometheus.GaugeVec, filename string, custo
 		"environment": environment})
 
 	var errors []string
+	var warnings []string
 
 	contextLogger.Trace("Entering in checkPing")
 
@@ -73,11 +76,25 @@ func CheckPing(config Conf, latency *prometheus.GaugeVec, filename string, custo
 		if stats.PacketLoss < 100 { // At least one packet received
 			contextLogger.Debug(fmt.Sprintf("Ping avg RTT: %fs", stats.AvgRtt.Seconds()))
 			latency.WithLabelValues("ping", probeName, config.Host, filename, customer, environment, oncallOffer).Set(stats.AvgRtt.Seconds())
-			return errors
+
+			// Some packets were lost: the target is still up, but degraded
+			if stats.PacketLoss > 0 {
+				warnings = append(warnings, fmt.Sprintf("%g%% packet loss", stats.PacketLoss))
+				contextLogger.Warning(warnings[len(warnings)-1])
+			}
+
+			// A previous attempt had 100% packet loss, but this one succeeded
+			if i > 0 {
+				warnings = append(warnings, fmt.Sprintf("Ping succeeded after %d retry(ies)", i))
+				contextLogger.Warning(warnings[len(warnings)-1])
+			}
+
+			contextLogger.Debug("warnings: ", warnings)
+
+			return errors, warnings
 		}
 
-		errors = append(errors, "100% packet loss")
-		contextLogger.Warning(errors[len(errors)-1])
+		contextLogger.Warning("100% packet loss")
 
 		time.Sleep(config.RetryAfter)
 
@@ -86,13 +103,15 @@ func CheckPing(config Conf, latency *prometheus.GaugeVec, filename string, custo
 	// Set latency to 0 to indicate the ping has failed
 	latency.WithLabelValues("ping", probeName, config.Host, filename, customer, environment, oncallOffer).Set(0)
 
+	errors = append(errors, "100% packet loss")
+
 	contextLogger.Debug("errors: ", errors)
 
-	return errors
+	return errors, warnings
 }
 
 // Schedule a probe
-func Schedule(config Conf, interval time.Duration, up *prometheus.GaugeVec, latency *prometheus.GaugeVec, filename string, customer string, environment string, oncallOffer string) *time.Ticker {
+func Schedule(config Conf, interval time.Duration, up *prometheus.GaugeVec, warn *prometheus.GaugeVec, latency *prometheus.GaugeVec, filename string, customer string, environment string, oncallOffer string) *time.Ticker {
 	probeName := getProbeName(config)
 	ticker := time.NewTicker(interval)
 	go func() {
@@ -103,11 +122,17 @@ func Schedule(config Conf, interval time.Duration, up *prometheus.GaugeVec, late
 				waitTime := time.Duration(rand.Int63n(int64(interval)))
 				time.Sleep(waitTime)
 
-				errors := CheckPing(config, latency, filename, customer, environment, oncallOffer)
+				errors, warnings := CheckPing(config, latency, filename, customer, environment, oncallOffer)
 				if len(errors) == 0 {
 					up.WithLabelValues("ping", probeName, config.Host, filename, customer, environment, oncallOffer).Set(1)
 				} else {
 					up.WithLabelValues("ping", probeName, config.Host, filename, customer, environment, oncallOffer).Set(0)
+				}
+
+				if len(warnings) == 0 {
+					warn.WithLabelValues("ping", probeName, config.Host, filename, customer, environment, oncallOffer).Set(0)
+				} else {
+					warn.WithLabelValues("ping", probeName, config.Host, filename, customer, environment, oncallOffer).Set(1)
 				}
 			}
 		}

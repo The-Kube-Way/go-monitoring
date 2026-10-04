@@ -26,6 +26,13 @@ var (
 		prometheus.GaugeOpts{Name: "go_monitoring_up"},
 		[]string{"probe", "name", "id", "filename", "customer", "environment", "oncall_offer"})
 
+	warn = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "go_monitoring_warn",
+			Help: "1 if the target is up but needs attention (e.g. TLS certificate close to expiration), else 0",
+		},
+		[]string{"probe", "name", "id", "filename", "customer", "environment", "oncall_offer"})
+
 	latency = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "go_monitoring_latency",
@@ -123,6 +130,7 @@ func loadConfig(configPath string) {
 			config,
 			CheckInterval,
 			up,
+			warn,
 			latency,
 			conf.Filename,
 			conf.Global.Customer,
@@ -146,6 +154,7 @@ func loadConfig(configPath string) {
 			config,
 			CheckInterval,
 			up,
+			warn,
 			latency,
 			conf.Filename,
 			conf.Global.Customer,
@@ -211,6 +220,7 @@ func main() {
 	}
 
 	prometheus.MustRegister(up)
+	prometheus.MustRegister(warn)
 	prometheus.MustRegister(latency)
 
 	http.Handle("/metrics", promhttp.Handler())

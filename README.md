@@ -27,6 +27,14 @@ In addition to [standard Go metrics](https://github.com/prometheus/client_golang
   - id: id of the target (url for http probe, host for ping, host:port for raw tcp)
   - name: name of the target (as specified in the config, "" if not specified)
 
+- **go_monitoring_warn**: 1 if the target is up but needs attention, else 0 (http and ping probes only)
+  - http: raised when the TLS certificate expires in less than 10 days.
+    A certificate close to expiration does not affect `go_monitoring_up`, which stays
+    at 1 until the certificate actually expires (the request then fails).
+  - ping: raised on partial packet loss (at least one packet lost, but not all),
+    or when the ping only succeeded after a retry.
+  - Same labels as `go_monitoring_up`
+
 ## Configuration
 
 The configuration is done via a YAML file:

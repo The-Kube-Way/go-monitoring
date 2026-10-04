@@ -4,14 +4,15 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"io/ioutil"
 	"math/rand"
 	"net"
 	"net/http"
-	"golang.org/x/net/http2"
 	"os"
 	"strings"
 	"time"
-	"io/ioutil"
+
+	"golang.org/x/net/http2"
 
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
@@ -30,7 +31,7 @@ type Conf struct {
 	InsecureSkipVerify   bool              `yaml:"skip_verify"`
 	Headers              map[string]string `yaml:"headers"`
 	IPVersion            string            `yaml:"ip_version"` // "ipv4" (default) or "ipv6"
-	Timeout              time.Duration     `yaml:"timeout"`     // HTTP request timeout (default: 30s)
+	Timeout              time.Duration     `yaml:"timeout"`    // HTTP request timeout (default: 30s)
 }
 
 func getProbeName(config Conf) string {
@@ -43,19 +44,22 @@ func getProbeName(config Conf) string {
 }
 
 // CheckHTTP HTTP probe
-func CheckHTTP(config Conf, latency *prometheus.GaugeVec, filename string, customer string, environment string, oncallOffer string) []string {
+// Returns the errors (target considered down) and the warnings (target still up,
+// but something needs attention, e.g. a TLS certificate close to expiration)
+func CheckHTTP(config Conf, latency *prometheus.GaugeVec, filename string, customer string, environment string, oncallOffer string) ([]string, []string) {
 	probeName := getProbeName(config)
 
 	contextLogger := log.WithFields(log.Fields{
-		"probe":        "http",
-		"name":         probeName,
-		"id":           config.URL,
-		"filename":     filename,
-		"customer":     customer,
-		"environment":  environment,
+		"probe":       "http",
+		"name":        probeName,
+		"id":          config.URL,
+		"filename":    filename,
+		"customer":    customer,
+		"environment": environment,
 	})
 
 	var errors []string
+	var warnings []string
 
 	contextLogger.Trace("Entering in CheckHTTP")
 
@@ -67,7 +71,7 @@ func CheckHTTP(config Conf, latency *prometheus.GaugeVec, filename string, custo
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: config.InsecureSkipVerify},
 	}
-	
+
 	// Configure timeout with default
 	timeout := config.Timeout
 	if timeout == 0 {
@@ -107,9 +111,9 @@ func CheckHTTP(config Conf, latency *prometheus.GaugeVec, filename string, custo
 
 	req, err := http.NewRequest(method, config.URL, strings.NewReader(config.Body))
 	if err != nil {
-		errors = append(errors, "Fail create request: " + err.Error())
+		errors = append(errors, "Fail create request: "+err.Error())
 		contextLogger.Warning(errors[len(errors)-1])
-		return errors
+		return errors, warnings
 	}
 	for key, value := range config.Headers {
 		req.Header.Set(key, value)
@@ -125,14 +129,14 @@ func CheckHTTP(config Conf, latency *prometheus.GaugeVec, filename string, custo
 	resp, err := client.Do(req)
 	requestLatency := time.Since(startTime)
 
-	if err != nil {		
-		errors = append(errors, "Request failed: " + err.Error())
+	if err != nil {
+		errors = append(errors, "Request failed: "+err.Error())
 		contextLogger.Warning(errors[len(errors)-1])
 
 		// Set latency to 0 to indicate the request has failed
 		latency.WithLabelValues("http", probeName, config.URL, filename, customer, environment, oncallOffer).Set(0)
 
-		return errors
+		return errors, warnings
 	}
 
 	// Save latency
@@ -151,17 +155,17 @@ func CheckHTTP(config Conf, latency *prometheus.GaugeVec, filename string, custo
 		contextLogger.Debug(fmt.Sprintf("TLS certificate expires on %s", cert.NotAfter.Format(time.RFC3339)))
 
 		// If certificate has expired, request will fail before
+		// so this is only a warning: the target is still up
 		if certExpiresIn <= expirationWarningThreshold {
-			errors = append(
-				errors,
+			warnings = append(
+				warnings,
 				fmt.Sprintf(
 					"TLS certificate will expire in %s (on %s)",
 					certExpiresIn.Round(time.Hour).String(),
 					cert.NotAfter.Format(time.RFC3339)))
-			contextLogger.Warning(errors[len(errors)-1])
+			contextLogger.Warning(warnings[len(warnings)-1])
 		}
 	}
-
 
 	// Check status code
 	StatusCodeErrorAbove := 400
@@ -200,9 +204,9 @@ func CheckHTTP(config Conf, latency *prometheus.GaugeVec, filename string, custo
 	if ExpectedResponseBody != "" {
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			errors = append(errors, "Fail to read response body: " + err.Error())
+			errors = append(errors, "Fail to read response body: "+err.Error())
 			contextLogger.Warning(errors[len(errors)-1])
-			return errors
+			return errors, warnings
 		}
 
 		contextLogger.Debug(fmt.Sprintf("Response body: '%s'", string(body)))
@@ -213,13 +217,14 @@ func CheckHTTP(config Conf, latency *prometheus.GaugeVec, filename string, custo
 	}
 
 	contextLogger.Debug("errors: ", errors)
+	contextLogger.Debug("warnings: ", warnings)
 
-	return errors
+	return errors, warnings
 
 }
 
 // Schedule a probe
-func Schedule(config Conf, interval time.Duration, up *prometheus.GaugeVec, latency *prometheus.GaugeVec, filename string, customer string, environment string, oncallOffer string) *time.Ticker {
+func Schedule(config Conf, interval time.Duration, up *prometheus.GaugeVec, warn *prometheus.GaugeVec, latency *prometheus.GaugeVec, filename string, customer string, environment string, oncallOffer string) *time.Ticker {
 	probeName := getProbeName(config)
 	ticker := time.NewTicker(interval)
 	go func() {
@@ -230,12 +235,18 @@ func Schedule(config Conf, interval time.Duration, up *prometheus.GaugeVec, late
 				waitTime := time.Duration(rand.Int63n(int64(interval)))
 				time.Sleep(waitTime)
 
-				errors := CheckHTTP(config, latency, filename, customer, environment, oncallOffer)
+				errors, warnings := CheckHTTP(config, latency, filename, customer, environment, oncallOffer)
 
 				if len(errors) == 0 {
 					up.WithLabelValues("http", probeName, config.URL, filename, customer, environment, oncallOffer).Set(1)
 				} else {
 					up.WithLabelValues("http", probeName, config.URL, filename, customer, environment, oncallOffer).Set(0)
+				}
+
+				if len(warnings) == 0 {
+					warn.WithLabelValues("http", probeName, config.URL, filename, customer, environment, oncallOffer).Set(0)
+				} else {
+					warn.WithLabelValues("http", probeName, config.URL, filename, customer, environment, oncallOffer).Set(1)
 				}
 			}
 		}
