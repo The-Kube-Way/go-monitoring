@@ -10,7 +10,9 @@ COPY go.* .
 
 RUN go get -v ./...
 
-RUN CGO_ENABLED=0 go build -v -o go-monitoring main.go
+ARG VERSION=dev
+
+RUN CGO_ENABLED=0 go build -v -ldflags="-X main.version=${VERSION}" -o go-monitoring main.go
 
 
 FROM scratch

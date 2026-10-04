@@ -21,6 +21,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// version is set at build time with -ldflags "-X main.version=..."
+var version = "dev"
+
 var (
 	up = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{Name: "go_monitoring_up"},
@@ -198,7 +201,7 @@ func main() {
 	// Use JSON logs
 	log.SetFormatter(&log.JSONFormatter{})
 
-	log.Println("Version: 0.1-alpha")
+	log.Println("Version: " + version)
 	if *traceLog {
 		log.SetLevel(log.TraceLevel)
 	} else if *debugLog {
