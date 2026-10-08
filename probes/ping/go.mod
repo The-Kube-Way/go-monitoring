@@ -2,7 +2,7 @@ module ping
 
 go 1.25.0
 
-toolchain go1.25.5
+toolchain go1.27.2
 
 require (
 	github.com/prometheus-community/pro-bing v0.9.1
