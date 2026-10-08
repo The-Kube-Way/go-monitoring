@@ -2,7 +2,7 @@ module http
 
 go 1.25.0
 
-toolchain go1.25.5
+toolchain go1.27.2
 
 require (
 	github.com/prometheus/client_golang v1.23.2
